@@ -1,0 +1,825 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ================================
+// USER MANAGEMENT & AUTHENTICATION
+// ================================
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  WRITER
+  USER
+  PREMIUM_USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+model User {
+  id                String     @id @default(cuid())
+  email             String     @unique
+  username          String?    @unique
+  firstName         String
+  lastName          String
+  password          String
+  role              UserRole   @default(USER)
+  status            UserStatus @default(PENDING_VERIFICATION)
+  avatar            String?
+  phone             String?
+  dateOfBirth       DateTime?
+  school            String?
+  grade             String? // e.g., "12 IPA", "12 IPS"
+  targetUniversity  String?
+  targetMajor       String?
+  
+  // Verification & Security
+  emailVerified     DateTime?
+  emailVerificationToken String?
+  passwordResetToken String?
+  passwordResetExpires DateTime?
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?
+  
+  // Subscription & Premium
+  isPremium         Boolean   @default(false)
+  premiumExpiresAt  DateTime?
+  subscriptionId    String?
+  
+  // Analytics & Tracking
+  loginCount        Int       @default(0)
+  lastLoginAt       DateTime?
+  ipAddress         String?
+  userAgent         String?
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  tryoutAttempts    TryoutAttempt[]
+  results           Result[]
+  payments          Payment[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  createdQuestions  Question[] @relation("QuestionAuthor")
+  createdTryouts    Tryout[]   @relation("TryoutCreator")
+  userProgress      UserProgress[]
+  studyPlans        StudyPlan[]
+  bookmarks         QuestionBookmark[]
+  reports           UserReport[]
+  sessions          UserSession[]
+  analytics         UserAnalytics?
+  subscriptions     Subscription[]
+  articles          Article[]
+  
+  // NextAuth Relations
+  accounts          Account[]
+  nextAuthSessions  Session[]
+  
+  @@map("users")
+}
+
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_sessions")
+}
+
+model UserAnalytics {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  totalTryouts          Int      @default(0)
+  averageScore          Float?
+  bestScore             Float?
+  totalStudyTime        Int      @default(0) // in minutes
+  favoriteSubjects      Json? // Array of subject preferences
+  weakSubjects          Json? // Array of subjects needing improvement
+  streakDays            Int      @default(0)
+  lastActivityAt        DateTime?
+  totalQuestionsAnswered Int     @default(0)
+  correctAnswers        Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_analytics")
+}
+
+// ================================
+// NEXTAUTH MODELS
+// ================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ================================
+// TRYOUT SYSTEM
+// ================================
+
+enum TryoutType {
+  FREE
+  PREMIUM
+  SPECIAL // Special events, competitions
+}
+
+enum TryoutStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  SCHEDULED
+}
+
+enum TryoutCategory {
+  UTBK_SNBT
+  TKA_SAINTEK
+  TKA_SOSHUM
+  TPS // Tes Potensi Skolastik
+  SIMULATION // Full simulation
+  PRACTICE // Practice mode
+}
+
+model TryoutSeries {
+  id          String @id @default(cuid())
+  title       String
+  description String?
+  slug        String @unique
+  isActive    Boolean @default(true)
+  sortOrder   Int     @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tryouts Tryout[]
+  
+  @@map("tryout_series")
+}
+
+model Tryout {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  slug        String         @unique
+  type        TryoutType
+  category    TryoutCategory
+  status      TryoutStatus   @default(DRAFT)
+  
+  // Configuration
+  duration    Int // in minutes
+  totalQuestions Int
+  passingScore   Float?
+  maxAttempts    Int @default(1) // for premium users might be 3
+  
+  // Scheduling
+  startDate   DateTime?
+  endDate     DateTime?
+  
+  // Pricing & Access
+  price       Float?  @default(0)
+  isPremium   Boolean @default(false)
+  
+  // Content
+  instructions String?
+  coverImage   String?
+  
+  // Analytics
+  totalAttempts Int @default(0)
+  averageScore  Float?
+  
+  // Relationships
+  seriesId    String?
+  creatorId   String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  series       TryoutSeries? @relation(fields: [seriesId], references: [id])
+  creator      User          @relation("TryoutCreator", fields: [creatorId], references: [id])
+  sections     TryoutSection[]
+  attempts     TryoutAttempt[]
+  questions    TryoutQuestion[]
+  analytics    TryoutAnalytics?
+  
+  @@map("tryouts")
+}
+
+model TryoutSection {
+  id          String @id @default(cuid())
+  tryoutId    String
+  title       String
+  description String?
+  duration    Int // in minutes
+  sortOrder   Int
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tryout    Tryout           @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+  questions TryoutQuestion[]
+  
+  @@map("tryout_sections")
+}
+
+model TryoutAnalytics {
+  id               String @id @default(cuid())
+  tryoutId         String @unique
+  totalAttempts    Int    @default(0)
+  completedAttempts Int   @default(0)
+  averageScore     Float?
+  highestScore     Float?
+  lowestScore      Float?
+  averageTimeSpent Int? // in minutes
+  
+  // Difficulty analysis
+  averageDifficulty Float?
+  questionStats     Json? // Statistics per question
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tryout Tryout @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+  
+  @@map("tryout_analytics")
+}
+
+// ================================
+// QUESTION MANAGEMENT
+// ================================
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  FILL_IN_BLANK
+  ESSAY
+  TRUE_FALSE
+  MATCHING
+}
+
+enum DifficultyLevel {
+  VERY_EASY
+  EASY
+  MEDIUM
+  HARD
+  VERY_HARD
+}
+
+enum Subject {
+  MATEMATIKA
+  BAHASA_INDONESIA
+  BAHASA_INGGRIS
+  FISIKA
+  KIMIA
+  BIOLOGI
+  SEJARAH
+  GEOGRAFI
+  EKONOMI
+  SOSIOLOGI
+  TPS_PENALARAN_UMUM
+  TPS_PENGETAHUAN_KUANTITATIF
+  TPS_PENGETAHUAN_UMUM
+  TPS_PEMAHAMAN_BACAAN
+}
+
+model Question {
+  id            String          @id @default(cuid())
+  content       String // Question text (can include HTML/Markdown)
+  type          QuestionType
+  subject       Subject
+  difficulty    DifficultyLevel
+  
+  // Question metadata
+  tags          Json? // Array of tags for categorization
+  concepts      Json? // Learning concepts covered
+  timeEstimate  Int? // Estimated time to solve in seconds
+  
+  // Question content
+  options       Json? // For multiple choice questions
+  correctAnswer String // Correct answer or answers
+  explanation   String? // Detailed explanation
+  hints         Json? // Array of hints
+  
+  // Media
+  image         String?
+  video         String?
+  audio         String?
+  
+  // Analytics & IRT
+  difficultyScore Float? // IRT difficulty parameter
+  discrimination  Float? // IRT discrimination parameter
+  guessing        Float? // IRT guessing parameter
+  
+  // Usage statistics
+  timesUsed     Int @default(0)
+  timesCorrect  Int @default(0)
+  averageTime   Float? // Average time taken to answer
+  
+  // Status
+  isActive      Boolean @default(true)
+  isVerified    Boolean @default(false)
+  
+  // Relations
+  authorId      String
+  reviewerId    String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  author        User @relation("QuestionAuthor", fields: [authorId], references: [id])
+  tryoutQuestions TryoutQuestion[]
+  answers       Answer[]
+  bookmarks     QuestionBookmark[]
+  reports       QuestionReport[]
+  
+  @@map("questions")
+}
+
+model TryoutQuestion {
+  id         String @id @default(cuid())
+  tryoutId   String
+  questionId String
+  sectionId  String?
+  sortOrder  Int
+  points     Float @default(1.0)
+  
+  createdAt DateTime @default(now())
+  
+  tryout   Tryout         @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+  question Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  section  TryoutSection? @relation(fields: [sectionId], references: [id])
+  
+  @@unique([tryoutId, questionId])
+  @@map("tryout_questions")
+}
+
+model QuestionBookmark {
+  id         String @id @default(cuid())
+  userId     String
+  questionId String
+  notes      String?
+  
+  createdAt DateTime @default(now())
+  
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, questionId])
+  @@map("question_bookmarks")
+}
+
+// ================================
+// TRYOUT ATTEMPTS & RESULTS
+// ================================
+
+enum AttemptStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  EXPIRED
+  ABANDONED
+}
+
+model TryoutAttempt {
+  id             String        @id @default(cuid())
+  userId         String
+  tryoutId       String
+  attemptNumber  Int @default(1)
+  status         AttemptStatus @default(NOT_STARTED)
+  
+  // Timing
+  startedAt      DateTime?
+  completedAt    DateTime?
+  timeSpent      Int? // in seconds
+  remainingTime  Int? // in seconds
+  
+  // Scoring
+  rawScore       Float?
+  scaledScore    Float? // IRT-based score
+  percentile     Float?
+  totalQuestions Int?
+  correctAnswers Int?
+  wrongAnswers   Int?
+  unanswered     Int?
+  
+  // Session data
+  currentQuestionIndex Int @default(0)
+  sessionData          Json? // Store current state
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tryout  Tryout    @relation(fields: [tryoutId], references: [id], onDelete: Cascade)
+  answers Answer[]
+  result  Result?
+  
+  @@unique([userId, tryoutId, attemptNumber])
+  @@map("tryout_attempts")
+}
+
+model Answer {
+  id         String @id @default(cuid())
+  attemptId  String
+  questionId String
+  answer     String // User's answer
+  isCorrect  Boolean?
+  timeSpent  Int? // Time spent on this question in seconds
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  attempt  TryoutAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question      @relation(fields: [questionId], references: [id])
+  
+  @@unique([attemptId, questionId])
+  @@map("answers")
+}
+
+model Result {
+  id              String @id @default(cuid())
+  userId          String
+  attemptId       String @unique
+  tryoutId        String
+  
+  // Scores
+  rawScore        Float
+  scaledScore     Float? // IRT-based score
+  percentileRank  Float?
+  gradeLevel      String? // A, B, C, D, E
+  
+  // Performance breakdown
+  subjectScores   Json? // Scores per subject
+  sectionScores   Json? // Scores per section
+  difficultyAnalysis Json? // Performance by difficulty level
+  
+  // Analytics
+  totalQuestions  Int
+  correctAnswers  Int
+  wrongAnswers    Int
+  unanswered      Int
+  timeSpent       Int // in seconds
+  
+  // Recommendations
+  strengths       Json? // Array of strong subjects/topics
+  weaknesses      Json? // Array of subjects/topics needing improvement
+  recommendations Json? // Study recommendations
+  
+  // University predictions
+  universityPredictions Json? // Predicted acceptance chances
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempt TryoutAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  
+  @@map("results")
+}
+
+// ================================
+// PAYMENT & SUBSCRIPTION SYSTEM
+// ================================
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  BANK_TRANSFER
+  E_WALLET
+  VIRTUAL_ACCOUNT
+  QRIS
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String
+  amount          Float
+  currency        String        @default("IDR")
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   PaymentMethod
+  
+  // Payment details
+  description     String?
+  items           Json? // Array of purchased items
+  
+  // External payment system
+  externalId      String? // Payment gateway transaction ID
+  paymentUrl      String? // Payment URL for user
+  expiresAt       DateTime?
+  
+  // Fulfillment
+  fulfilledAt     DateTime?
+  refundedAt      DateTime?
+  refundAmount    Float?
+  refundReason    String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptions   Subscription[]
+  
+  @@map("payments")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PAUSED
+}
+
+model Subscription {
+  id          String             @id @default(cuid())
+  userId      String
+  paymentId   String?
+  planName    String
+  status      SubscriptionStatus @default(ACTIVE)
+  
+  // Subscription details
+  startDate   DateTime
+  endDate     DateTime
+  autoRenew   Boolean @default(false)
+  
+  // Benefits
+  tryoutQuota Int? // Number of premium tryouts allowed
+  features    Json? // Array of enabled features
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment Payment? @relation(fields: [paymentId], references: [id])
+  
+  @@map("subscriptions")
+}
+
+// ================================
+// STUDY MANAGEMENT
+// ================================
+
+model StudyPlan {
+  id           String   @id @default(cuid())
+  userId       String
+  title        String
+  description  String?
+  targetDate   DateTime
+  subjects     Json // Array of subjects to focus on
+  weeklyHours  Int? // Target study hours per week
+  isActive     Boolean  @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activities   StudyActivity[]
+  
+  @@map("study_plans")
+}
+
+model StudyActivity {
+  id           String   @id @default(cuid())
+  studyPlanId  String
+  title        String
+  description  String?
+  subject      Subject
+  estimatedTime Int // in minutes
+  actualTime   Int? // in minutes
+  isCompleted  Boolean  @default(false)
+  completedAt  DateTime?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  studyPlan    StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+  
+  @@map("study_activities")
+}
+
+model UserProgress {
+  id           String   @id @default(cuid())
+  userId       String
+  subject      Subject
+  totalTime    Int      @default(0) // in minutes
+  questionsAnswered Int @default(0)
+  correctAnswers    Int @default(0)
+  averageScore      Float?
+  lastStudiedAt     DateTime?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, subject])
+  @@map("user_progress")
+}
+
+// ================================
+// CONTENT MANAGEMENT
+// ================================
+
+model Article {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String
+  excerpt     String?
+  coverImage  String?
+  tags        Json? // Array of tags
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  viewCount   Int      @default(0)
+  
+  authorId    String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  author      User @relation(fields: [authorId], references: [id])
+  
+  @@map("articles")
+}
+
+// ================================
+// NOTIFICATIONS & COMMUNICATIONS
+// ================================
+
+enum NotificationType {
+  TRYOUT_REMINDER
+  RESULT_AVAILABLE
+  PAYMENT_SUCCESS
+  SUBSCRIPTION_EXPIRY
+  STUDY_REMINDER
+  ANNOUNCEMENT
+  SYSTEM_UPDATE
+}
+
+model Notification {
+  id       String           @id @default(cuid())
+  userId   String
+  type     NotificationType
+  title    String
+  message  String
+  data     Json? // Additional data
+  isRead   Boolean          @default(false)
+  readAt   DateTime?
+  
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
+}
+
+// ================================
+// REPORTING & AUDIT
+// ================================
+
+model UserReport {
+  id          String @id @default(cuid())
+  reporterId  String
+  reportedType String // "question", "user", "tryout", etc.
+  reportedId  String // ID of the reported entity
+  reason      String
+  description String?
+  status      String @default("pending") // pending, reviewed, resolved
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  reporter    User @relation(fields: [reporterId], references: [id])
+  
+  @@map("user_reports")
+}
+
+model QuestionReport {
+  id          String @id @default(cuid())
+  questionId  String
+  reporterId  String
+  reason      String
+  description String?
+  status      String @default("pending")
+  
+  createdAt   DateTime @default(now())
+  
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  @@map("question_reports")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entity    String // User, Question, Tryout, etc.
+  entityId  String?
+  oldData   Json?
+  newData   Json?
+  ipAddress String?
+  userAgent String?
+  
+  createdAt DateTime @default(now())
+  
+  user User? @relation(fields: [userId], references: [id])
+  
+  @@map("audit_logs")
+}
+
+// ================================
+// SYSTEM CONFIGURATION
+// ================================
+
+model SystemConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  type  String @default("string") // string, number, boolean, json
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("system_config")
+}
+
+model EmailTemplate {
+  id       String @id @default(cuid())
+  name     String @unique
+  subject  String
+  htmlBody String
+  textBody String?
+  variables Json? // Available variables for the template
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("email_templates")
+}

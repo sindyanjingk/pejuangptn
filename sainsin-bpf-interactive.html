@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SainsIn Business Process Flow - Interactive Diagram</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+        }
+        
+        .process-section {
+            margin-bottom: 50px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .process-section:hover {
+            border-color: #3498db;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
+        }
+        
+        .process-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2980b9;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .flow-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .flow-step {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(116, 185, 255, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            min-width: 150px;
+            text-align: center;
+        }
+        
+        .flow-step:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(116, 185, 255, 0.4);
+        }
+        
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: #2980b9;
+            font-weight: bold;
+        }
+        
+        .decision-step {
+            background: linear-gradient(135deg, #fd79a8, #e84393);
+            transform: rotate(0deg);
+            position: relative;
+        }
+        
+        .process-step {
+            background: linear-gradient(135deg, #81ecec, #00cec9);
+        }
+        
+        .output-step {
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: scale(1.05);
+        }
+        
+        .metric-title {
+            font-weight: bold;
+            color: #d63031;
+            margin-bottom: 10px;
+        }
+        
+        .recommendations {
+            background: linear-gradient(135deg, #e17055, #fdcb6e);
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        
+        .rec-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2d3436;
+            margin-bottom: 15px;
+        }
+        
+        .rec-item {
+            background: rgba(255,255,255,0.3);
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #d63031;
+        }
+        
+        @media (max-width: 768px) {
+            .flow-container {
+                flex-direction: column;
+            }
+            
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SainsIn Business Process Flow</h1>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #74b9ff, #0984e3);"></div>
+                <span>Process Step</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #fd79a8, #e84393);"></div>
+                <span>Decision Point</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #81ecec, #00cec9);"></div>
+                <span>System Process</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #a29bfe, #6c5ce7);"></div>
+                <span>Output/Result</span>
+            </div>
+        </div>
+
+        <!-- Customer Acquisition Process -->
+        <div class="process-section">
+            <div class="process-title">1. Customer Acquisition Process</div>
+            <div class="flow-container">
+                <div class="flow-step">Potential Customer</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step decision-step">Marketing Channels</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Landing Page Visit</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step decision-step">User Interest?</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Sign Up/Register</div>
+            </div>
+        </div>
+
+        <!-- User Onboarding Process -->
+        <div class="process-section">
+            <div class="process-title">2. User Onboarding & Free Trial</div>
+            <div class="flow-container">
+                <div class="flow-step">Registration</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step process-step">Email Verification</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Profile Setup</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Free Try Out Access</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step decision-step">Upgrade Decision</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step output-step">Premium Purchase</div>
+            </div>
+        </div>
+
+        <!-- Core Service Delivery -->
+        <div class="process-section">
+            <div class="process-title">3. Core Service Delivery Process</div>
+            <div class="flow-container">
+                <div class="flow-step">Premium Access</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Select Try Out</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step process-step">CBT Interface</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Take Test</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step process-step">IRT Scoring</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step output-step">Detailed Results</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step output-step">University Recommendations</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Video Solutions</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step decision-step">Retake? (Max 3x)</div>
+            </div>
+        </div>
+
+        <!-- Payment Process -->
+        <div class="process-section">
+            <div class="process-title">4. Payment & Subscription Management</div>
+            <div class="flow-container">
+                <div class="flow-step">Package Selection</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step process-step">Payment Gateway</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step decision-step">Payment Success?</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step process-step">Activate Premium</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step output-step">Confirmation Email</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Credit/Quota Update</div>
+            </div>
+        </div>
+
+        <!-- Customer Success -->
+        <div class="process-section">
+            <div class="process-title">5. Customer Success & Retention</div>
+            <div class="flow-container">
+                <div class="flow-step">Active User</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step process-step">Usage Tracking</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step process-step">Performance Analytics</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step decision-step">Engagement Level</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Retention Campaigns</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step output-step">Success Stories</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step output-step">Testimonials</div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="process-section">
+            <div class="process-title">📊 Key Performance Indicators</div>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">Business Metrics</div>
+                    <div>• Conversion Rate (Free to Premium)</div>
+                    <div>• Customer Acquisition Cost (CAC)</div>
+                    <div>• Monthly Recurring Revenue (MRR)</div>
+                    <div>• Customer Lifetime Value (CLV)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Product Metrics</div>
+                    <div>• Test Completion Rate</div>
+                    <div>• Score Prediction Accuracy</div>
+                    <div>• User Engagement</div>
+                    <div>• Content Quality Score</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Customer Success</div>
+                    <div>• User Satisfaction (CSAT)</div>
+                    <div>• Net Promoter Score (NPS)</div>
+                    <div>• UTBK Success Rate</div>
+                    <div>• Retention Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="recommendations">
+            <div class="rec-title">🎯 Strategic Recommendations</div>
+            <div class="rec-item">
+                <strong>Technology Enhancement:</strong> Implement AI-powered adaptive learning and personalization
+            </div>
+            <div class="rec-item">
+                <strong>Business Model Innovation:</strong> Introduce subscription models and affiliate programs
+            </div>
+            <div class="rec-item">
+                <strong>Market Expansion:</strong> Diversify to other university entrance exams (SIMAK UI, UTUL UGM)
+            </div>
+            <div class="rec-item">
+                <strong>Partnership Strategy:</strong> Collaborate with high schools and educational institutions
+            </div>
+            <div class="rec-item">
+                <strong>Content Strategy:</strong> Develop comprehensive study guides and learning resources
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add interactivity to flow steps
+        document.querySelectorAll('.flow-step').forEach(step => {
+            step.addEventListener('click', function() {
+                this.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 200);
+            });
+        });
+
+        // Add pulse animation for decision steps
+        document.querySelectorAll('.decision-step').forEach(step => {
+            setInterval(() => {
+                step.style.boxShadow = '0 0 20px rgba(253, 121, 168, 0.8)';
+                setTimeout(() => {
+                    step.style.boxShadow = '0 4px 15px rgba(253, 121, 168, 0.3)';
+                }, 1000);
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
