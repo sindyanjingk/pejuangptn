@@ -159,18 +159,62 @@ export default function Home() {
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
                   <div className="relative overflow-hidden rounded-3xl shadow-2xl">
-                    {/* Hero Image - Students studying for UTBK */}
+                    {/* Hero Illustration - Professional Education Theme */}
                     <div className="relative">
-                      <Image 
-                        src="/images/pejuangptn-hero.png" 
-                        alt="Siswa-siswi sedang belajar persiapan UTBK - Pejuang PTN"
-                        width={600}
-                        height={400}
-                        className="w-full h-96 object-cover rounded-2xl"
-                        priority
-                      />
+                      <div className="w-full h-96 bg-gradient-to-br from-blue-100 via-purple-50 to-indigo-100 rounded-2xl flex items-center justify-center relative overflow-hidden">
+                        {/* Background Pattern */}
+                        <div className="absolute inset-0 opacity-10">
+                          <svg width="100%" height="100%" className="h-full w-full">
+                            <defs>
+                              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                                <circle cx="20" cy="20" r="1" fill="currentColor" className="text-blue-400"/>
+                              </pattern>
+                            </defs>
+                            <rect width="100%" height="100%" fill="url(#grid)" />
+                          </svg>
+                        </div>
+                        
+                        {/* Main Illustration Content */}
+                        <div className="relative z-10 text-center">
+                          <div className="mb-6">
+                            <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4">
+                              <BookOpen className="w-12 h-12 text-white" />
+                            </div>
+                          </div>
+                          
+                          <h3 className="text-2xl font-bold text-gray-800 mb-2">Pejuang PTN</h3>
+                          <p className="text-gray-600 mb-6">Platform Persiapan UTBK Terlengkap</p>
+                          
+                          {/* Stats Indicators */}
+                          <div className="flex justify-center gap-8">
+                            <div className="text-center">
+                              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg mb-2 mx-auto">
+                                <Users className="w-6 h-6 text-blue-600" />
+                              </div>
+                              <div className="text-sm text-gray-600">10K+ Siswa</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg mb-2 mx-auto">
+                                <Trophy className="w-6 h-6 text-purple-600" />
+                              </div>
+                              <div className="text-sm text-gray-600">98% Akurasi</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg mb-2 mx-auto">
+                                <Target className="w-6 h-6 text-green-600" />
+                              </div>
+                              <div className="text-sm text-gray-600">Prediksi Tepat</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Decorative Elements */}
+                        <div className="absolute top-4 right-4 w-8 h-8 bg-blue-400 rounded-full opacity-20"></div>
+                        <div className="absolute bottom-4 left-4 w-6 h-6 bg-purple-400 rounded-full opacity-20"></div>
+                        <div className="absolute top-1/2 left-4 w-4 h-4 bg-indigo-400 rounded-full opacity-20"></div>
+                      </div>
                       {/* Overlay gradient for better text readability on floating elements */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-blue-900/10 via-transparent to-transparent rounded-2xl"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-blue-900/5 via-transparent to-transparent rounded-2xl"></div>
                     </div>
                   </div>
                 </motion.div>

@@ -38,6 +38,7 @@ export default function Header() {
           
           <div className="hidden md:flex items-center space-x-6">
             {[
+              { name: 'Belajar', href: '/belajar' },
               { name: 'Tryout', href: '/tryouts' },
               { name: 'Tentang', href: '/about' },
               { name: 'Harga', href: '/pricing' },
@@ -126,6 +127,7 @@ export default function Header() {
           >
             <div className="px-4 py-4 space-y-3">
               {[
+                { name: 'Belajar', href: '/belajar' },
                 { name: 'Tryout', href: '/tryouts' },
                 { name: 'Tentang', href: '/about' },
                 { name: 'Harga', href: '/pricing' },
